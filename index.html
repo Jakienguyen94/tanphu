@@ -2,60 +2,60 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>PHOTOCOPY TÂN PHÚ - 18 WỪU </title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <title>Tính tiền In Ấn</title>
   <style>
     body {
       font-family: 'Noto Sans', sans-serif;
-      background: linear-gradient(135deg, #3a1c71, #5c258d, #4389a2);
-      color: white;
-      min-height: 100vh;
+      background: #f2f5fa;
       margin: 0;
+      padding: 0;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: white;
+      margin: 20px;
       padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     h2 {
       text-align: center;
       margin-bottom: 20px;
-    }
-    .container {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 20px;
-      border-radius: 15px;
-      width: 100%;
-      max-width: 600px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      color: #333;
     }
     .form-group {
-      display: flex;
-      flex-wrap: wrap;
       margin-bottom: 15px;
     }
     .form-group label {
-      flex: 1 1 100px;
+      display: block;
       margin-bottom: 5px;
+      color: #555;
+      font-size: 15px;
     }
     .form-group input {
-      flex: 2 1 200px;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
       font-size: 16px;
+      box-sizing: border-box;
     }
     button {
-      background: #00c6ff;
+      width: 100%;
+      padding: 14px;
       background: linear-gradient(45deg, #00c6ff, #0072ff);
       border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: bold;
       color: white;
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 8px;
       cursor: pointer;
-      margin: 5px 0;
-      width: 100%;
+      margin-top: 10px;
     }
     button:hover {
       opacity: 0.9;
@@ -64,15 +64,15 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-      background: white;
-      color: black;
-      border-radius: 10px;
+      background: #fafafa;
+      border-radius: 12px;
       overflow: hidden;
     }
     table th, table td {
-      padding: 10px;
+      padding: 12px;
       text-align: center;
-      border: 1px solid #ddd;
+      border: 1px solid #eee;
+      font-size: 15px;
     }
     table th {
       background: #0072ff;
@@ -83,25 +83,21 @@
       font-size: 18px;
       font-weight: bold;
       text-align: right;
+      color: #333;
     }
-    /* Responsive cho điện thoại */
+    /* Mobile cải thiện */
     @media (max-width: 600px) {
-      .form-group {
-        flex-direction: column;
-      }
-      .form-group input {
-        width: 100%;
-      }
-      table th, table td {
-        font-size: 14px;
-        padding: 8px;
-      }
+      h2 { font-size: 20px; }
+      .form-group input { font-size: 17px; padding: 16px; }
+      button { font-size: 18px; padding: 16px; }
+      table th, table td { font-size: 16px; padding: 10px; }
+      .total { font-size: 20px; }
     }
   </style>
 </head>
 <body>
-  <h2>TÂN PHÚ - TÍNH TIỀN IN BẠT | DECAL</h2>
   <div class="container">
+    <h2>Tính tiền In Ấn</h2>
     <div class="form-group">
       <label>Chiều dài (cm):</label>
       <input type="number" id="chieuDai" placeholder="Nhập chiều dài">
@@ -118,12 +114,12 @@
       <label>Nội dung in (không bắt buộc):</label>
       <input type="text" id="noiDung" placeholder="Nội dung in">
     </div>
-    <button onclick="tinhToan()">Tính toán</button>
+    <button onclick="tinhToan()">Thêm vào bảng</button>
 
     <table id="logTable">
       <thead>
         <tr>
-          <th>Chọn</th>
+          <th>✓</th>
           <th>STT</th>
           <th>Nội dung</th>
           <th>m²</th>
@@ -149,7 +145,7 @@ function tinhToan() {
 
     let tbody = document.querySelector("#logTable tbody");
     let row = tbody.insertRow();
-    row.insertCell().innerHTML = `<input type="checkbox" checked>`;
+    row.insertCell().innerHTML = `<input type="checkbox" checked onchange="capNhatTong()">`;
     row.insertCell().innerText = stt++;
     row.insertCell().innerText = noiDung;
     row.insertCell().innerText = m2.toFixed(2);
@@ -166,31 +162,6 @@ function capNhatTong() {
         }
     });
     document.getElementById("tongTien").innerText = "Tổng: " + tong.toLocaleString() + " VNĐ";
-}
-
-async function exportPdf() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Dữ liệu
-    let rows = [];
-    document.querySelectorAll("#logTable tbody tr").forEach(tr => {
-        if (tr.cells[0].querySelector("input").checked) {
-            let stt = tr.cells[1].innerText;
-            let nd = tr.cells[2].innerText;
-            let m2 = tr.cells[3].innerText;
-            let tien = tr.cells[4].innerText;
-            rows.push([stt, nd, m2, tien]);
-        }
-    });
-
-    // Xuất bảng
-    doc.autoTable({
-        head: [["STT","Nội dung","m²","Thành tiền"]],
-        body: rows,
-    });
-
-    doc.save("bao-gia.pdf");
 }
 </script>
 </body>
