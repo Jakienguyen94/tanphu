@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>TÍNH TIỀN IN BẠT - DECAL TÂN PHÚ</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #3a1c71, #5e4ae3, #2a5298);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 30px;
+      color: #fff;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 20px;
+      width: 700px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(45deg, #2a5298, #5e4ae3);
+      color: #fff;
+      transition: 0.3s;
+    }
+    button:hover {
+      opacity: 0.85;
+      transform: scale(1.02);
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: rgba(0,0,0,0.2);
+    }
+    tr:nth-child(even) {
+      background: rgba(255,255,255,0.05);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>TÍNH TIỀN IN BẠT - DECAL TÂN PHÚ</h2>
+  
+  <label>Nội dung in (không bắt buộc):</label>
+  <input type="text" id="content" placeholder="Ví dụ: In bạt Hiflex">
+  
+  <label>Chiều dài (cm):</label>
+  <input type="number" id="length" placeholder="Nhập chiều dài">
+  
+  <label>Chiều rộng (cm):</label>
+  <input type="number" id="width" placeholder="Nhập chiều rộng">
+  
+  <label>Giá (VNĐ/m²):</label>
+  <input type="number" id="price" placeholder="Ví dụ: 120000">
+  
+  <button onclick="calculate()">Tính toán</button>
+  
+  
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>Chọn</th>
+        <th>STT</th>
+        <th>Nội dung</th>
+        <th>m²</th>
+        <th>Thành tiền (VNĐ)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+// ==== Font NotoSans Base64 (rút gọn ví dụ, bạn cần thay bằng full base64 thật sự) ====
+const notoSansBase64 = `AAEAAAASAQAABAAgR0RFRgAA... rất dài ...`;
+
+// ==== Dữ liệu log ====
+let logs = [];
+let sttCounter = 1;
+
+function calculate() {
+  let length = parseFloat(document.getElementById("length").value) || 0;
+  let width = parseFloat(document.getElementById("width").value) || 0;
+  let price = parseFloat(document.getElementById("price").value) || 0;
+  let content = document.getElementById("content").value || "-";
+
+  if (length <= 0 || width <= 0 || price <= 0) {
+    alert("Vui lòng nhập đầy đủ số hợp lệ!");
+    return;
+  }
+
+  let m2 = (length * width) / 10000; // cm → m²
+  let money = m2 * price;
+
+  let logItem = { stt: sttCounter++, content, m2: m2.toFixed(2), money: money.toLocaleString() };
+  logs.push(logItem);
+
+  renderTable();
+}
+
+function renderTable() {
+  let tbody = document.querySelector("#logTable tbody");
+  tbody.innerHTML = "";
+  logs.forEach((item, index) => {
+    tbody.innerHTML += `
+      <tr>
+        <td><input type="checkbox" data-index="${index}"></td>
+        <td>${item.stt}</td>
+        <td>${item.content}</td>
+        <td>${item.m2}</td>
+        <td>${item.money}</td>
+      </tr>`;
+  });
+}
+
+function exportPdf() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Thêm font
+  doc.addFileToVFS("NotoSans-Regular.ttf", notoSansBase64);
+  doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
+  doc.setFont("NotoSans");
+
+  let selectedRows = [];
+  let checkboxes = document.querySelectorAll("#logTable tbody input[type=checkbox]:checked");
+
+  checkboxes.forEach(cb => {
+    let idx = cb.getAttribute("data-index");
+    selectedRows.push(logs[idx]);
+  });
+
+  if (selectedRows.length === 0) {
+    alert("Vui lòng chọn ít nhất 1 mục để xuất PDF!");
+    return;
+  }
+
+  let rows = [];
+  let total = 0;
+
+  selectedRows.forEach(item => {
+    rows.push([item.stt, item.content, item.m2, item.money]);
+    total += parseInt(item.money.replace(/\./g,"").replace(/,/g,""));
+  });
+
+  // Xuất bảng
+  doc.autoTable({
+    head: [["STT", "Nội dung", "m²", "Thành tiền"]],
+    body: rows,
+    styles: { font: "NotoSans", fontSize: 10 },
+    theme: 'grid'
+  });
+
+  // Tổng cộng
+  doc.text(`Tổng cộng: ${total.toLocaleString()} VNĐ`, 14, doc.lastAutoTable.finalY + 10);
+
+  doc.save("bang-bao-gia.pdf");
+}
+</script>
+</body>
+</html>
