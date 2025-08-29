@@ -12,8 +12,8 @@
 
   <h1 class="text-3xl font-bold mb-6 text-indigo-700">📄 Trình Đếm Trang PDF</h1>
 
-  <!-- Nút chọn file/thư mục -->
-  <div class="flex gap-4 mb-6">
+  <!-- Khu vực chọn file và đơn giá -->
+  <div class="flex flex-wrap gap-4 mb-6 items-center justify-center">
     <input type="file" id="fileInput" multiple accept="application/pdf"
            class="hidden" onchange="handleFiles(this.files)">
     <label for="fileInput"
@@ -27,16 +27,25 @@
            class="cursor-pointer bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-3 rounded-2xl shadow-md transition transform hover:scale-105">
       📁 Chọn Thư Mục
     </label>
+
+    <!-- Nhập đơn giá -->
+    <div class="flex items-center bg-white px-4 py-2 rounded-2xl shadow-md">
+      <label for="priceInput" class="mr-2 font-medium text-gray-700">💵 Đơn giá:</label>
+      <input type="number" id="priceInput" value="500" min="0"
+             class="w-28 border border-gray-300 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <span class="ml-1">đ/tờ</span>
+    </div>
   </div>
 
   <!-- Bảng hiển thị chi tiết -->
-  <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+  <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
     <table class="w-full border-collapse">
       <thead class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
         <tr>
           <th class="p-3 text-left">Tên File</th>
           <th class="p-3 text-center">Số Trang</th>
           <th class="p-3 text-center">Số Tờ</th>
+          <th class="p-3 text-center">Thành tiền</th>
         </tr>
       </thead>
       <tbody id="fileTable" class="divide-y divide-gray-200 bg-white"></tbody>
@@ -44,7 +53,7 @@
   </div>
 
   <!-- Thông tin tổng -->
-  <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
     <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
       <p class="text-gray-600">📑 Tổng số file</p>
       <p id="totalFiles" class="text-xl font-bold text-indigo-600">0</p>
@@ -56,6 +65,10 @@
     <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
       <p class="text-gray-600">📰 Tổng số tờ</p>
       <p id="totalSheets" class="text-xl font-bold text-indigo-600">0</p>
+    </div>
+    <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
+      <p class="text-gray-600">💰 Tổng tiền</p>
+      <p id="totalPrice" class="text-xl font-bold text-green-600">0</p>
     </div>
   </div>
 
@@ -70,15 +83,24 @@
     let totalFiles = document.getElementById("totalFiles");
     let totalPages = document.getElementById("totalPages");
     let totalSheets = document.getElementById("totalSheets");
+    let totalPrice = document.getElementById("totalPrice");
     let exportBtn = document.getElementById("exportBtn");
+    let priceInput = document.getElementById("priceInput");
 
     let details = [];
-    let fileCount = 0, pageCount = 0, sheetCount = 0;
+    let fileCount = 0, pageCount = 0, sheetCount = 0, priceCount = 0;
+    let PRICE_PER_SHEET = parseInt(priceInput.value);
+
+    // Xử lý thay đổi đơn giá
+    priceInput.addEventListener("input", () => {
+      PRICE_PER_SHEET = parseInt(priceInput.value) || 0;
+      recalcPrice();
+    });
 
     async function handleFiles(files) {
       fileTable.innerHTML = "";
       details = [];
-      fileCount = 0; pageCount = 0; sheetCount = 0;
+      fileCount = 0; pageCount = 0; sheetCount = 0; priceCount = 0;
 
       for (let file of files) {
         if (file.type !== "application/pdf") continue;
@@ -90,43 +112,74 @@
           let pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           let pages = pdf.numPages;
           let sheets = Math.ceil(pages / 2);
+          let price = sheets * PRICE_PER_SHEET;
 
           fileCount++;
           pageCount += pages;
           sheetCount += sheets;
+          priceCount += price;
 
           details.push({
             name: file.webkitRelativePath || file.name,
             pages,
-            sheets
+            sheets,
+            price
           });
 
           row.innerHTML = `
             <td class="p-2 border max-w-md break-words">${file.webkitRelativePath || file.name}</td>
             <td class="p-2 border text-center">${pages}</td>
             <td class="p-2 border text-center">${sheets}</td>
+            <td class="p-2 border text-center text-green-600">${price.toLocaleString()} đ</td>
           `;
         } catch (err) {
           if (err.name === "PasswordException" || err.message.includes("password")) {
             row.innerHTML = `
               <td class="p-2 border max-w-md break-words">${file.webkitRelativePath || file.name}</td>
-              <td class="p-2 border text-center text-red-500" colspan="2">🔒 PDF có mật khẩu</td>
+              <td class="p-2 border text-center text-red-500" colspan="3">🔒 PDF có mật khẩu</td>
             `;
           } else {
             row.innerHTML = `
               <td class="p-2 border max-w-md break-words">${file.webkitRelativePath || file.name}</td>
-              <td class="p-2 border text-center text-red-500" colspan="2">❌ Lỗi đọc file</td>
+              <td class="p-2 border text-center text-red-500" colspan="3">❌ Lỗi đọc file</td>
             `;
           }
         }
         fileTable.appendChild(row);
       }
 
+      updateTotals();
+      exportBtn.classList.remove("hidden");
+    }
+
+    function updateTotals() {
       totalFiles.textContent = fileCount;
       totalPages.textContent = pageCount;
       totalSheets.textContent = sheetCount;
+      totalPrice.textContent = priceCount.toLocaleString() + " đ";
+    }
 
-      exportBtn.classList.remove("hidden");
+    function recalcPrice() {
+      priceCount = 0;
+      fileTable.innerHTML = "";
+
+      details = details.map(file => {
+        file.price = file.sheets * PRICE_PER_SHEET;
+        priceCount += file.price;
+
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="p-2 border max-w-md break-words">${file.name}</td>
+          <td class="p-2 border text-center">${file.pages}</td>
+          <td class="p-2 border text-center">${file.sheets}</td>
+          <td class="p-2 border text-center text-green-600">${file.price.toLocaleString()} đ</td>
+        `;
+        fileTable.appendChild(row);
+
+        return file;
+      });
+
+      updateTotals();
     }
 
     exportBtn.addEventListener("click", () => {
