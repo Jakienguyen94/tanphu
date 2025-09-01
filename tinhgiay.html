@@ -7,6 +7,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Thêm thư viện html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col items-center justify-start p-6">
 
@@ -38,51 +40,61 @@
   </div>
 
   <!-- Bảng hiển thị chi tiết -->
-  <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
-    <table class="w-full border-collapse">
-      <thead class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-        <tr>
-          <th class="p-3 text-left">Tên File</th>
-          <th class="p-3 text-center">Số Trang</th>
-          <th class="p-3 text-center">Số Tờ</th>
-          <th class="p-3 text-center">Tiền in</th>
-          <th class="p-3 text-center">Tiền bìa</th>
-          <th class="p-3 text-center">Tổng</th>
-        </tr>
-      </thead>
-      <tbody id="fileTable" class="divide-y divide-gray-200 bg-white"></tbody>
-    </table>
+  <div id="resultArea">
+    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+      <table class="w-full border-collapse">
+        <thead class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+          <tr>
+            <th class="p-3 text-left">Tên File</th>
+            <th class="p-3 text-center">Số Trang</th>
+            <th class="p-3 text-center">Số Tờ</th>
+            <th class="p-3 text-center">Số lượng</th>
+            <th class="p-3 text-center">Tiền in</th>
+            <th class="p-3 text-center">Tiền bìa</th>
+            <th class="p-3 text-center">Tổng</th>
+          </tr>
+        </thead>
+        <tbody id="fileTable" class="divide-y divide-gray-200 bg-white"></tbody>
+      </table>
+    </div>
+
+    <!-- Thông tin tổng -->
+    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
+        <p class="text-gray-600">📑 Tổng số file</p>
+        <p id="totalFiles" class="text-xl font-bold text-indigo-600">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
+        <p class="text-gray-600">📄 Tổng số trang</p>
+        <p id="totalPages" class="text-xl font-bold text-indigo-600">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
+        <p class="text-gray-600">📰 Tổng số tờ</p>
+        <p id="totalSheets" class="text-xl font-bold text-indigo-600">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
+        <p class="text-gray-600">📘 Tổng tiền bìa</p>
+        <p id="totalCover" class="text-xl font-bold text-purple-600">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
+        <p class="text-gray-600">💰 Tổng tiền</p>
+        <p id="totalPrice" class="text-xl font-bold text-green-600">0</p>
+      </div>
+    </div>
   </div>
 
-  <!-- Thông tin tổng -->
-  <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-    <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
-      <p class="text-gray-600">📑 Tổng số file</p>
-      <p id="totalFiles" class="text-xl font-bold text-indigo-600">0</p>
-    </div>
-    <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
-      <p class="text-gray-600">📄 Tổng số trang</p>
-      <p id="totalPages" class="text-xl font-bold text-indigo-600">0</p>
-    </div>
-    <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
-      <p class="text-gray-600">📰 Tổng số tờ</p>
-      <p id="totalSheets" class="text-xl font-bold text-indigo-600">0</p>
-    </div>
-    <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
-      <p class="text-gray-600">📘 Tổng tiền bìa</p>
-      <p id="totalCover" class="text-xl font-bold text-purple-600">0</p>
-    </div>
-    <div class="bg-white p-4 rounded-2xl shadow-lg text-center">
-      <p class="text-gray-600">💰 Tổng tiền</p>
-      <p id="totalPrice" class="text-xl font-bold text-green-600">0</p>
-    </div>
-  </div>
+  <!-- Xuất Excel + Xuất Ảnh -->
+  <div class="flex gap-4">
+    <button id="exportBtn"
+            class="hidden bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-6 py-3 rounded-2xl shadow-md transition transform hover:scale-105">
+      📊 Xuất Excel
+    </button>
 
-  <!-- Xuất Excel -->
-  <button id="exportBtn"
-          class="hidden bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-6 py-3 rounded-2xl shadow-md transition transform hover:scale-105">
-    📊 Xuất Excel
-  </button>
+    <button id="exportImgBtn"
+            class="hidden bg-pink-500 hover:bg-pink-600 text-white font-medium px-6 py-3 rounded-2xl shadow-md transition transform hover:scale-105">
+      🖼️ Xuất Ảnh
+    </button>
+  </div>
 
   <script>
     let fileTable = document.getElementById("fileTable");
@@ -92,6 +104,7 @@
     let totalCover = document.getElementById("totalCover");
     let totalPrice = document.getElementById("totalPrice");
     let exportBtn = document.getElementById("exportBtn");
+    let exportImgBtn = document.getElementById("exportImgBtn");
     let priceInput = document.getElementById("priceInput");
 
     let details = [];
@@ -118,13 +131,14 @@
           let pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           let pages = pdf.numPages;
           let sheets = Math.ceil(pages / 2);
-          let printPrice = sheets * PRICE_PER_SHEET;
-          let coverPrice = 0; // mặc định 0, sẽ nhập sau
+          let quantity = 1;
+          let printPrice = sheets * PRICE_PER_SHEET * quantity;
+          let coverPrice = 0;
           let total = printPrice + coverPrice;
 
           fileCount++;
-          pageCount += pages;
-          sheetCount += sheets;
+          pageCount += pages * quantity;
+          sheetCount += sheets * quantity;
           coverCount += coverPrice;
           priceCount += total;
 
@@ -132,6 +146,7 @@
             name: file.webkitRelativePath || file.name,
             pages,
             sheets,
+            quantity,
             printPrice,
             coverPrice,
             total
@@ -143,6 +158,11 @@
             <td class="p-2 border max-w-md break-words">${file.webkitRelativePath || file.name}</td>
             <td class="p-2 border text-center">${pages}</td>
             <td class="p-2 border text-center">${sheets}</td>
+            <td class="p-2 border text-center">
+              <input type="number" value="${quantity}" min="1"
+                     class="w-20 border border-gray-300 rounded-lg px-2 py-1 text-center quantityInput"
+                     data-index="${fileIndex}">
+            </td>
             <td class="p-2 border text-center">${printPrice.toLocaleString()} đ</td>
             <td class="p-2 border text-center">
               <input type="number" value="${coverPrice}" min="0" 
@@ -154,25 +174,45 @@
         } catch (err) {
           row.innerHTML = `
             <td class="p-2 border max-w-md break-words">${file.webkitRelativePath || file.name}</td>
-            <td class="p-2 border text-center text-red-500" colspan="5">❌ Không đọc được PDF</td>
+            <td class="p-2 border text-center text-red-500" colspan="6">❌ Không đọc được PDF</td>
           `;
         }
         fileTable.appendChild(row);
       }
 
-      attachCoverInputs();
+      attachInputs();
       updateTotals();
       exportBtn.classList.remove("hidden");
+      exportImgBtn.classList.remove("hidden");
     }
 
-    function attachCoverInputs() {
+    function attachInputs() {
+      // Số lượng
+      document.querySelectorAll(".quantityInput").forEach(input => {
+        input.addEventListener("input", (e) => {
+          let idx = parseInt(e.target.dataset.index);
+          let val = parseInt(e.target.value) || 1;
+
+          details[idx].quantity = val;
+          details[idx].printPrice = details[idx].sheets * PRICE_PER_SHEET * val;
+          details[idx].total = details[idx].printPrice + details[idx].coverPrice * val;
+
+          let row = e.target.closest("tr");
+          row.querySelector(".totalCell").textContent = details[idx].total.toLocaleString() + " đ";
+          row.querySelectorAll("td")[4].textContent = details[idx].printPrice.toLocaleString() + " đ";
+
+          updateTotals();
+        });
+      });
+
+      // Tiền bìa
       document.querySelectorAll(".coverInput").forEach(input => {
         input.addEventListener("input", (e) => {
           let idx = parseInt(e.target.dataset.index);
           let val = parseInt(e.target.value) || 0;
 
           details[idx].coverPrice = val;
-          details[idx].total = details[idx].printPrice + details[idx].coverPrice;
+          details[idx].total = details[idx].printPrice + details[idx].coverPrice * details[idx].quantity;
 
           e.target.closest("tr").querySelector(".totalCell").textContent = details[idx].total.toLocaleString() + " đ";
 
@@ -183,9 +223,9 @@
 
     function updateTotals() {
       fileCount = details.length;
-      pageCount = details.reduce((a, f) => a + f.pages, 0);
-      sheetCount = details.reduce((a, f) => a + f.sheets, 0);
-      coverCount = details.reduce((a, f) => a + f.coverPrice, 0);
+      pageCount = details.reduce((a, f) => a + f.pages * f.quantity, 0);
+      sheetCount = details.reduce((a, f) => a + f.sheets * f.quantity, 0);
+      coverCount = details.reduce((a, f) => a + f.coverPrice * f.quantity, 0);
       priceCount = details.reduce((a, f) => a + f.total, 0);
 
       totalFiles.textContent = fileCount;
@@ -197,8 +237,8 @@
 
     function recalcPrice() {
       details.forEach((file, idx) => {
-        file.printPrice = file.sheets * PRICE_PER_SHEET;
-        file.total = file.printPrice + file.coverPrice;
+        file.printPrice = file.sheets * PRICE_PER_SHEET * file.quantity;
+        file.total = file.printPrice + file.coverPrice * file.quantity;
       });
 
       // render lại bảng
@@ -209,6 +249,11 @@
           <td class="p-2 border max-w-md break-words">${file.name}</td>
           <td class="p-2 border text-center">${file.pages}</td>
           <td class="p-2 border text-center">${file.sheets}</td>
+          <td class="p-2 border text-center">
+            <input type="number" value="${file.quantity}" min="1"
+                   class="w-20 border border-gray-300 rounded-lg px-2 py-1 text-center quantityInput"
+                   data-index="${idx}">
+          </td>
           <td class="p-2 border text-center">${file.printPrice.toLocaleString()} đ</td>
           <td class="p-2 border text-center">
             <input type="number" value="${file.coverPrice}" min="0" 
@@ -220,7 +265,7 @@
         fileTable.appendChild(row);
       });
 
-      attachCoverInputs();
+      attachInputs();
       updateTotals();
     }
 
@@ -229,6 +274,17 @@
       let wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Kết quả");
       XLSX.writeFile(wb, "ket_qua.xlsx");
+    });
+
+    // Xuất ảnh
+    exportImgBtn.addEventListener("click", () => {
+      let target = document.getElementById("resultArea");
+      html2canvas(target, { scale: 2 }).then(canvas => {
+        let link = document.createElement("a");
+        link.download = "ket_qua.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
     });
   </script>
 </body>
